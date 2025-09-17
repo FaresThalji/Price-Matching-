@@ -1,184 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Price Match Calculator - Multiple Parts with Inline Refunds</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: #f9f9f9;
-    }
-    label {
-      display: block;
-      margin: 15px 0 5px;
-    }
-    input[type="number"], input[type="text"] {
-      padding: 8px;
-      font-size: 1rem;
-      box-sizing: border-box;
-    }
-    input.partNumber {
-      width: 35%;
-    }
-    input.partPrice {
-      width: 25%;
-      margin-left: 10px;
-    }
-    .part-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .refund {
-      width: 120px;
-      font-weight: bold;
-      color: #2c3e50;
-    }
-    button {
-      margin-top: 20px;
-      padding: 10px 15px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .remove-btn {
-      background: #e74c3c;
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      font-size: 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    #message {
-      margin-top: 20px;
-      color: #e74c3c;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Price Match Calculator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 10px;
+  }
+  label, input, button {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+  input[type="number"], input[type="text"] {
+    padding: 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .part {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 15px;
+    position: relative;
+  }
+  .refund {
+    font-weight: bold;
+    margin-top: 6px;
+  }
+  button {
+    padding: 10px;
+    cursor: pointer;
+  }
+  .remove-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+</style>
 </head>
 <body>
-  <h1>Price Match Calculator</h1>
 
-  <label for="kitPrice">Kit Price ($):</label>
-  <input
-    type="number"
-    id="kitPrice"
-    min="0"
-    step="0.01"
-    placeholder="Enter total kit price"
-    oninput="updateRefunds()"
-  />
+<h1>Price Match Calculator</h1>
 
-  <div id="partsContainer">
-    <label>Parts:</label>
-    <div class="part-row">
-      <input type="text" class="partNumber" placeholder="Part number" />
-      <input
-        type="number"
-        class="partPrice"
-        min="0"
-        step="0.01"
-        placeholder="Part price ($)"
-        oninput="updateRefunds()"
-      />
-      <div class="refund">$0.00</div>
-      <button type="button" class="remove-btn" onclick="removePart(this)">✕</button>
-    </div>
-  </div>
+<label for="kitPrice">Kit Price:</label>
+<input type="number" id="kitPrice" min="0" step="0.01" placeholder="Enter kit price" />
 
-  <button type="button" onclick="addPart()">Add Another Part</button>
-  <div id="message"></div>
+<div id="partsContainer"></div>
 
-  <script>
-    function addPart() {
-      const partsContainer = document.getElementById("partsContainer");
-      const partRow = document.createElement("div");
-      partRow.className = "part-row";
-      partRow.innerHTML = `
-        <input type="text" class="partNumber" placeholder="Part number" />
-        <input type="number" class="partPrice" min="0" step="0.01" placeholder="Part price ($)" oninput="updateRefunds()" />
-        <div class="refund">$0.00</div>
-        <button type="button" class="remove-btn" onclick="removePart(this)">✕</button>
-      `;
-      partsContainer.appendChild(partRow);
+<button id="addPartBtn">Add Part</button>
+<button id="calculateBtn">Calculate Refunds</button>
+
+<script>
+  const partsContainer = document.getElementById('partsContainer');
+  const addPartBtn = document.getElementById('addPartBtn');
+  const calculateBtn = document.getElementById('calculateBtn');
+  const kitPriceInput = document.getElementById('kitPrice');
+
+  function createPart(index) {
+    const div = document.createElement('div');
+    div.className = 'part';
+    div.dataset.index = index;
+
+    div.innerHTML = `
+      <label>Part Number:</label>
+      <input type="text" class="part-number" placeholder="Enter part number" />
+      <label>Part Price:</label>
+      <input type="number" class="part-price" min="0" step="0.01" placeholder="Enter part price" />
+      <div class="refund">Refund: $0.00</div>
+      <button class="remove-btn" title="Remove this part">X</button>
+    `;
+
+    div.querySelector('.remove-btn').addEventListener('click', () => {
+      div.remove();
+    });
+
+    return div;
+  }
+
+  addPartBtn.addEventListener('click', () => {
+    const newIndex = partsContainer.children.length;
+    partsContainer.appendChild(createPart(newIndex));
+  });
+
+  calculateBtn.addEventListener('click', () => {
+    const kitPrice = parseFloat(kitPriceInput.value);
+    if (isNaN(kitPrice) || kitPrice <= 0) {
+      alert('Please enter a valid kit price greater than 0.');
+      return;
     }
 
-    function removePart(button) {
-      button.parentElement.remove();
-      updateRefunds();
-    }
+    const parts = [...partsContainer.querySelectorAll('.part')];
+    let totalPartsPrice = 0;
+    const partsData = [];
 
-    function updateRefunds() {
-      const kitPriceInput = document.getElementById("kitPrice");
-      const kitPrice = parseFloat(kitPriceInput.value);
+    // Read and validate part prices
+    for (const partDiv of parts) {
+      const partNumber = partDiv.querySelector('.part-number').value.trim();
+      const partPriceInput = partDiv.querySelector('.part-price');
+      const partPrice = parseFloat(partPriceInput.value);
 
-      const messageDiv = document.getElementById("message");
-      messageDiv.textContent = "";
-
-      const partRows = [...document.querySelectorAll(".part-row")];
-
-      if (isNaN(kitPrice) || kitPrice <= 0) {
-        // Clear refunds and show message
-        partRows.forEach((row) => {
-          row.querySelector(".refund").textContent = "$0.00";
-        });
-        messageDiv.textContent = "Please enter a valid kit price greater than 0.";
+      if (!partNumber) {
+        alert('Please enter a part number for every part.');
         return;
       }
 
-      let totalPartsPrice = 0;
-      const parts = [];
-
-      for (const row of partRows) {
-        const numberInput = row.querySelector(".partNumber");
-        const priceInput = row.querySelector(".partPrice");
-        const refundDiv = row.querySelector(".refund");
-
-        const price = parseFloat(priceInput.value);
-        const number = numberInput.value.trim() || "(No part number)";
-
-        if (isNaN(price) || price <= 0) {
-          refundDiv.textContent = "$0.00";
-          messageDiv.textContent = `Please enter a valid part price greater than 0 for part "${number}".`;
-          return;
-        }
-
-        totalPartsPrice += price;
-        parts.push({ number, price, refundDiv });
-      }
-
-      if (totalPartsPrice === 0) {
-        partRows.forEach((row) => {
-          row.querySelector(".refund").textContent = "$0.00";
-        });
-        messageDiv.textContent = "Please enter part prices greater than 0.";
+      if (isNaN(partPrice) || partPrice < 0) {
+        alert('Please enter a valid part price (0 or more) for every part.');
         return;
       }
 
-      // Calculate refunds with proportional scaling if needed
+      totalPartsPrice += partPrice;
+      partsData.push({ partDiv, partPrice });
+    }
+
+    // Calculate refunds
+    for (const { partDiv, partPrice } of partsData) {
+      let refund;
       if (totalPartsPrice <= kitPrice) {
-        // No scaling needed
-        parts.forEach(({ refundDiv, price }) => {
-          refundDiv.textContent = `$${price.toFixed(2)}`;
-        });
+        refund = partPrice;
       } else {
-        // Scale refunds proportionally
-        parts.forEach(({ refundDiv, price }) => {
-          const refund = (price / totalPartsPrice) * kitPrice;
-          refundDiv.textContent = `$${refund.toFixed(2)}`;
-        });
+        refund = (partPrice / totalPartsPrice) * kitPrice;
       }
-
-      messageDiv.textContent = ""; // Clear any previous errors
+      refund = refund.toFixed(2);
+      partDiv.querySelector('.refund').textContent = `Refund: $${refund}`;
     }
-  </script>
+  });
+
+  // Start with one part input
+  addPartBtn.click();
+</script>
+
 </body>
 </html>
