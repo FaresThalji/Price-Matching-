@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Price Match Calculator - Multiple Parts with Inline Refunds</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    label {
+      display: block;
+      margin: 15px 0 5px;
+    }
+    input[type="number"], input[type="text"] {
+      padding: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input.partNumber {
+      width: 35%;
+    }
+    input.partPrice {
+      width: 25%;
+      margin-left: 10px;
+    }
+    .part-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .refund {
+      width: 120px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .remove-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    #message {
+      margin-top: 20px;
+      color: #e74c3c;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Price Match Calculator</h1>
+
+  <label for="kitPrice">Kit Price ($):</label>
+  <input
+    type="number"
+    id="kitPrice"
+    min="0"
+    step="0.01"
+    placeholder="Enter total kit price"
+    oninput="updateRefunds()"
+  />
+
+  <div id="partsContainer">
+    <label>Parts:</label>
+    <div class="part-row">
+      <input type="text" class="partNumber" placeholder="Part number" />
+      <input
+        type="number"
+        class="partPrice"
+        min="0"
+        step="0.01"
+        placeholder="Part price ($)"
+        oninput="updateRefunds()"
+      />
+      <div class="refund">$0.00</div>
+      <button type="button" class="remove-btn" onclick="removePart(this)">✕</button>
+    </div>
+  </div>
+
+  <button type="button" onclick="addPart()">Add Another Part</button>
+  <div id="message"></div>
+
+  <script>
+    function addPart() {
+      const partsContainer = document.getElementById("partsContainer");
+      const partRow = document.createElement("div");
+      partRow.className = "part-row";
+      partRow.innerHTML = `
+        <input type="text" class="partNumber" placeholder="Part number" />
+        <input type="number" class="partPrice" min="0" step="0.01" placeholder="Part price ($)" oninput="updateRefunds()" />
+        <div class="refund">$0.00</div>
+        <button type="button" class="remove-btn" onclick="removePart(this)">✕</button>
+      `;
+      partsContainer.appendChild(partRow);
+    }
+
+    function removePart(button) {
+      button.parentElement.remove();
+      updateRefunds();
+    }
+
+    function updateRefunds() {
+      const kitPriceInput = document.getElementById("kitPrice");
+      const kitPrice = parseFloat(kitPriceInput.value);
+
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = "";
+
+      const partRows = [...document.querySelectorAll(".part-row")];
+
+      if (isNaN(kitPrice) || kitPrice <= 0) {
+        // Clear refunds and show message
+        partRows.forEach((row) => {
+          row.querySelector(".refund").textContent = "$0.00";
+        });
+        messageDiv.textContent = "Please enter a valid kit price greater than 0.";
+        return;
+      }
+
+      let totalPartsPrice = 0;
+      const parts = [];
+
+      for (const row of partRows) {
+        const numberInput = row.querySelector(".partNumber");
+        const priceInput = row.querySelector(".partPrice");
+        const refundDiv = row.querySelector(".refund");
+
+        const price = parseFloat(priceInput.value);
+        const number = numberInput.value.trim() || "(No part number)";
+
+        if (isNaN(price) || price <= 0) {
+          refundDiv.textContent = "$0.00";
+          messageDiv.textContent = `Please enter a valid part price greater than 0 for part "${number}".`;
+          return;
+        }
+
+        totalPartsPrice += price;
+        parts.push({ number, price, refundDiv });
+      }
+
+      if (totalPartsPrice === 0) {
+        partRows.forEach((row) => {
+          row.querySelector(".refund").textContent = "$0.00";
+        });
+        messageDiv.textContent = "Please enter part prices greater than 0.";
+        return;
+      }
+
+      // Calculate refunds with proportional scaling if needed
+      if (totalPartsPrice <= kitPrice) {
+        // No scaling needed
+        parts.forEach(({ refundDiv, price }) => {
+          refundDiv.textContent = `$${price.toFixed(2)}`;
+        });
+      } else {
+        // Scale refunds proportionally
+        parts.forEach(({ refundDiv, price }) => {
+          const refund = (price / totalPartsPrice) * kitPrice;
+          refundDiv.textContent = `$${refund.toFixed(2)}`;
+        });
+      }
+
+      messageDiv.textContent = ""; // Clear any previous errors
+    }
+  </script>
+</body>
+</html>
