@@ -6,138 +6,184 @@
 <title>Price Match Calculator</title>
 <style>
   body {
-    font-family: Arial, sans-serif;
-    max-width: 600px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    max-width: 800px;
     margin: 30px auto;
-    padding: 10px;
+    padding: 20px;
+    background-color: #f9f9f9;
   }
-  label, input, button {
-    display: block;
-    margin-bottom: 10px;
+  h1 {
+    text-align: center;
+    color: #333;
+  }
+  .input-group {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+  }
+  .input-group label {
+    font-weight: bold;
+    margin-right: 10px;
+    min-width: 80px;
+  }
+  input[type="number"],
+  input[type="text"] {
     font-size: 16px;
-  }
-  input[type="number"], input[type="text"] {
-    padding: 6px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
     width: 100%;
     box-sizing: border-box;
   }
-  .part {
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-bottom: 15px;
-    position: relative;
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
   }
-  .refund {
+  th, td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  th {
+    background-color: #f2f2f2;
     font-weight: bold;
-    margin-top: 6px;
+  }
+  .refund-cell {
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 1.1em;
+    min-width: 100px;
+  }
+  .action-cell {
+    text-align: center;
   }
   button {
-    padding: 10px;
+    font-size: 16px;
+    padding: 10px 15px;
     cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    color: white;
+  }
+  #addPartBtn {
+    background-color: #007bff;
+    display: block;
+    width: 100%;
+    margin-top: 15px;
   }
   .remove-btn {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    background: #f44336;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    cursor: pointer;
+    background-color: #dc3545;
+    padding: 5px 10px;
   }
 </style>
 </head>
 <body>
+  <h1>Price Match Calculator</h1>
 
-<h1>Price Match Calculator</h1>
+  <div class="input-group">
+    <label for="kitPrice">Kit Price:</label>
+    <input
+      type="number"
+      id="kitPrice"
+      min="0"
+      step="0.01"
+      placeholder="$1000.00"
+    />
+  </div>
 
-<label for="kitPrice">Kit Price:</label>
-<input type="number" id="kitPrice" min="0" step="0.01" placeholder="Enter kit price" />
+  <table id="partsTable">
+    <thead>
+      <tr>
+        <th>Part Number</th>
+        <th>Part Price</th>
+        <th>Refund Amount</th>
+        <th class="action-cell">Action</th>
+      </tr>
+    </thead>
+    <tbody id="partsTbody"></tbody>
+  </table>
 
-<div id="partsContainer"></div>
+  <button id="addPartBtn">Add Part</button>
 
-<button id="addPartBtn">Add Part</button>
-<button id="calculateBtn">Calculate Refunds</button>
+  <script>
+    const kitPriceInput = document.getElementById("kitPrice");
+    const addPartBtn = document.getElementById("addPartBtn");
+    const partsTbody = document.getElementById("partsTbody");
 
-<script>
-  const partsContainer = document.getElementById('partsContainer');
-  const addPartBtn = document.getElementById('addPartBtn');
-  const calculateBtn = document.getElementById('calculateBtn');
-  const kitPriceInput = document.getElementById('kitPrice');
+    function calculateAndDisplayRefunds() {
+      const kitPrice = parseFloat(kitPriceInput.value);
+      const partRows = [...partsTbody.querySelectorAll("tr")];
 
-  function createPart(index) {
-    const div = document.createElement('div');
-    div.className = 'part';
-    div.dataset.index = index;
+      // Step 1: Gather data and calculate total
+      let totalPartsPrice = 0;
+      const partsData = [];
 
-    div.innerHTML = `
-      <label>Part Number:</label>
-      <input type="text" class="part-number" placeholder="Enter part number" />
-      <label>Part Price:</label>
-      <input type="number" class="part-price" min="0" step="0.01" placeholder="Enter part price" />
-      <div class="refund">Refund: $0.00</div>
-      <button class="remove-btn" title="Remove this part">X</button>
-    `;
+      for (const row of partRows) {
+        const partPriceInput = row.querySelector(".part-price");
+        const partPrice = parseFloat(partPriceInput.value) || 0;
+        totalPartsPrice += partPrice;
+        partsData.push({ row, partPrice });
+      }
 
-    div.querySelector('.remove-btn').addEventListener('click', () => {
-      div.remove();
+      // Step 2: Calculate and display refund for each part
+      for (const { row, partPrice } of partsData) {
+        const refundCell = row.querySelector(".refund-cell");
+        let refund = 0;
+
+        if (
+          !isNaN(kitPrice) &&
+          kitPrice > 0 &&
+          totalPartsPrice > 0
+        ) {
+          // New Equation: (kit price / total parts sum) * part price
+          refund = (kitPrice / totalPartsPrice) * partPrice;
+        }
+
+        refundCell.textContent = `$${refund.toFixed(2)}`;
+      }
+    }
+
+    function createPartRow() {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>
+          <input type="text" class="part-number" placeholder="e.g., 8KX-2591" />
+        </td>
+        <td>
+          <input type="number" class="part-price" min="0" step="0.01" placeholder="$50.00" />
+        </td>
+        <td class="refund-cell">$0.00</td>
+        <td class="action-cell">
+          <button class="remove-btn" title="Remove this part">X</button>
+        </td>
+      `;
+      
+      // Event listener for removing a row
+      row.querySelector(".remove-btn").addEventListener("click", () => {
+        row.remove();
+        calculateAndDisplayRefunds();
+      });
+      
+      return row;
+    }
+
+    // Add a new part row when the button is clicked
+    addPartBtn.addEventListener("click", () => {
+      partsTbody.appendChild(createPartRow());
     });
 
-    return div;
-  }
-
-  addPartBtn.addEventListener('click', () => {
-    const newIndex = partsContainer.children.length;
-    partsContainer.appendChild(createPart(newIndex));
-  });
-
-  calculateBtn.addEventListener('click', () => {
-    const kitPrice = parseFloat(kitPriceInput.value);
-    if (isNaN(kitPrice) || kitPrice <= 0) {
-      alert('Please enter a valid kit price greater than 0.');
-      return;
-    }
-
-    const parts = [...partsContainer.querySelectorAll('.part')];
-    let totalPartsPrice = 0;
-    const partsData = [];
-
-    // Read and validate part prices
-    for (const partDiv of parts) {
-      const partNumber = partDiv.querySelector('.part-number').value.trim();
-      const partPriceInput = partDiv.querySelector('.part-price');
-      const partPrice = parseFloat(partPriceInput.value);
-
-      if (!partNumber) {
-        alert('Please enter a part number for every part.');
-        return;
+    // Recalculate everything when kit price or any part price changes
+    kitPriceInput.addEventListener("input", calculateAndDisplayRefunds);
+    partsTbody.addEventListener("input", (event) => {
+      if (event.target.classList.contains("part-price")) {
+        calculateAndDisplayRefunds();
       }
+    });
 
-      if (isNaN(partPrice) || partPrice < 0) {
-        alert('Please enter a valid part price (0 or more) for every part.');
-        return;
-      }
-
-      totalPartsPrice += partPrice;
-      partsData.push({ partDiv, partPrice });
-    }
-
-    // Calculate refunds
-    for (const { partDiv, partPrice } of partsData) {
-      let refund;
-      if (totalPartsPrice <= kitPrice) {
-        refund = partPrice;
-      } else {
-        refund = (partPrice / totalPartsPrice) * kitPrice;
-      }
-      refund = refund.toFixed(2);
-      partDiv.querySelector('.refund').textContent = `Refund: $${refund}`;
-    }
-  });
-
-  // Start with one part input
-  addPartBtn.click();
-</script>
-
+    // Start with one part input by default
+    addPartBtn.click();
+  </script>
 </body>
 </html>
