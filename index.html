@@ -5,32 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Price Match Calculator</title>
 <style>
+  :root {
+    --border-radius: 8px;
+    --padding: 20px;
+  }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
       Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    max-width: 800px;
-    margin: 30px auto;
-    padding: 20px;
-    background-color: #f9f9f9;
+    margin: 0;
+    padding: 30px;
+    background-color: #f0f2f5;
+  }
+  .main-container {
+    display: flex;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .panel {
+    background-color: #ffffff;
+    padding: var(--padding);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  .left-panel {
+    flex: 1;
+    min-width: 250px;
+  }
+  .right-panel {
+    flex: 3;
   }
   h1 {
+    margin-top: 0;
     text-align: center;
     color: #333;
   }
-  .input-group {
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-  }
-  .input-group label {
+  label {
+    display: block;
     font-weight: bold;
-    margin-right: 10px;
-    min-width: 80px;
+    margin-bottom: 8px;
+    color: #555;
   }
   input[type="number"],
   input[type="text"] {
     font-size: 16px;
-    padding: 8px;
+    padding: 10px;
     border-radius: 4px;
     border: 1px solid #ccc;
     width: 100%;
@@ -39,25 +58,34 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
   }
   th, td {
-    padding: 12px;
-    border: 1px solid #ddd;
+    padding: 12px 10px;
+    border-bottom: 1px solid #ddd;
     text-align: left;
+    vertical-align: middle;
   }
   th {
-    background-color: #f2f2f2;
-    font-weight: bold;
+    background-color: #f8f8f8;
+    font-size: 14px;
+    color: #666;
+    text-transform: uppercase;
+  }
+  .col-part-number {
+    width: 40%;
+  }
+  .col-part-price,
+  .col-refund {
+    width: 25%;
+  }
+  .col-action {
+    width: 10%;
+    text-align: center;
   }
   .refund-cell {
     font-weight: bold;
     font-family: monospace;
     font-size: 1.1em;
-    min-width: 100px;
-  }
-  .action-cell {
-    text-align: center;
   }
   button {
     font-size: 16px;
@@ -80,32 +108,35 @@
 </style>
 </head>
 <body>
-  <h1>Price Match Calculator</h1>
 
-  <div class="input-group">
-    <label for="kitPrice">Kit Price:</label>
-    <input
-      type="number"
-      id="kitPrice"
-      min="0"
-      step="0.01"
-      placeholder="$1000.00"
-    />
+  <div class="main-container">
+    <div class="panel left-panel">
+      <h1>Kit Price</h1>
+      <label for="kitPrice">Total Kit Price:</label>
+      <input
+        type="number"
+        id="kitPrice"
+        min="0"
+        step="0.01"
+        placeholder="$1000.00"
+      />
+    </div>
+
+    <div class="panel right-panel">
+      <table id="partsTable">
+        <thead>
+          <tr>
+            <th class="col-part-number">Part Number</th>
+            <th class="col-part-price">Part Price</th>
+            <th class="col-refund">Refund</th>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody id="partsTbody"></tbody>
+      </table>
+      <button id="addPartBtn">Add Part</button>
+    </div>
   </div>
-
-  <table id="partsTable">
-    <thead>
-      <tr>
-        <th>Part Number</th>
-        <th>Part Price</th>
-        <th>Refund Amount</th>
-        <th class="action-cell">Action</th>
-      </tr>
-    </thead>
-    <tbody id="partsTbody"></tbody>
-  </table>
-
-  <button id="addPartBtn">Add Part</button>
 
   <script>
     const kitPriceInput = document.getElementById("kitPrice");
@@ -115,8 +146,6 @@
     function calculateAndDisplayRefunds() {
       const kitPrice = parseFloat(kitPriceInput.value);
       const partRows = [...partsTbody.querySelectorAll("tr")];
-
-      // Step 1: Gather data and calculate total
       let totalPartsPrice = 0;
       const partsData = [];
 
@@ -127,7 +156,6 @@
         partsData.push({ row, partPrice });
       }
 
-      // Step 2: Calculate and display refund for each part
       for (const { row, partPrice } of partsData) {
         const refundCell = row.querySelector(".refund-cell");
         let refund = 0;
@@ -137,7 +165,6 @@
           kitPrice > 0 &&
           totalPartsPrice > 0
         ) {
-          // New Equation: (kit price / total parts sum) * part price
           refund = (kitPrice / totalPartsPrice) * partPrice;
         }
 
@@ -148,19 +175,18 @@
     function createPartRow() {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>
+        <td class="col-part-number">
           <input type="text" class="part-number" placeholder="e.g., 8KX-2591" />
         </td>
-        <td>
+        <td class="col-part-price">
           <input type="number" class="part-price" min="0" step="0.01" placeholder="$50.00" />
         </td>
-        <td class="refund-cell">$0.00</td>
-        <td class="action-cell">
+        <td class="col-refund refund-cell">$0.00</td>
+        <td class="col-action">
           <button class="remove-btn" title="Remove this part">X</button>
         </td>
       `;
-      
-      // Event listener for removing a row
+
       row.querySelector(".remove-btn").addEventListener("click", () => {
         row.remove();
         calculateAndDisplayRefunds();
@@ -169,12 +195,10 @@
       return row;
     }
 
-    // Add a new part row when the button is clicked
     addPartBtn.addEventListener("click", () => {
       partsTbody.appendChild(createPartRow());
     });
 
-    // Recalculate everything when kit price or any part price changes
     kitPriceInput.addEventListener("input", calculateAndDisplayRefunds);
     partsTbody.addEventListener("input", (event) => {
       if (event.target.classList.contains("part-price")) {
@@ -182,7 +206,6 @@
       }
     });
 
-    // Start with one part input by default
     addPartBtn.click();
   </script>
 </body>
